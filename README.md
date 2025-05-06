@@ -55,6 +55,11 @@ r2 = r2_score(y_test, y1)
 print('R² Score:', r2)
 
 
+
+
+
+
+
 Assignment_no =02
 
 from tensorflow.keras.datasets import imdb
@@ -148,12 +153,12 @@ df['date'] = pd.to_datetime(df['date'])
 df.set_index('date', inplace=True)
 df
 
-# Scale the data
+
 scaler = MinMaxScaler()
 scaled_data = scaler.fit_transform(df[['close']])
 
 
-# Visualize the closing price
+
 plt.figure(figsize=(12, 6))
 plt.plot(df['close'], label='Google Stock Price')
 plt.title('Google Stock Price Over Time')
@@ -163,7 +168,7 @@ plt.legend()
 plt.show()
 
 
-# Create sequences
+
 def create_sequences(data, seq_length):
     X, y = [], []
     for i in range(len(data) - seq_length):
@@ -175,12 +180,12 @@ sequence_length = 60
 X, y = create_sequences(scaled_data, sequence_length)
 
 
-# Train-test split
+
 split = int(0.8 * len(X))
 X_train, X_test = X[:split], X[split:]
 y_train, y_test = y[:split], y[split:]
 
-# Build the LSTM model
+
 model = Sequential([
     LSTM(50, return_sequences=False, input_shape=(sequence_length, 1)),
     Dense(1)
@@ -189,20 +194,19 @@ model = Sequential([
 model.compile(optimizer='adam', loss='mean_squared_error')
 model.summary()
 
-# Train the model
-# Train the model
+
 history = model.fit(X_train, y_train, epochs=20, batch_size=32, validation_data=(X_test, y_test))
 
 
 y_pred = model.predict(X_test)
 
-# Inverse scale predictions
+
 y_pred_rescaled = scaler.inverse_transform(y_pred)
 y_test_rescaled = scaler.inverse_transform(y_test.reshape(-1, 1))
 
 
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-# Evaluation
+
 mae = mean_absolute_error(y_test_rescaled, y_pred_rescaled)
 rmse = np.sqrt(mean_squared_error(y_test_rescaled, y_pred_rescaled))
 r2 = r2_score(y_test_rescaled, y_pred_rescaled)
@@ -215,7 +219,7 @@ print(f"R² Score: {r2:.4f}")
 print(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
 
 
-# Plot actual vs predicted
+
 plt.figure(figsize=(12, 6))
 plt.plot(y_test_rescaled, label='Actual Price')
 plt.plot(y_pred_rescaled, label='Predicted Price')
