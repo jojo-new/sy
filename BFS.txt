@@ -1,0 +1,137 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <omp.h>
+
+using namespace std;
+
+class Graph {
+    int V;
+    vector<vector<int>> adj;
+
+public:
+    Graph(int V) {
+        this->V = V;
+        adj.resize(V);
+    }
+
+    void addEdge(int u, int v) {
+        adj[u].push_back(v);
+        adj[v].push_back(u); // For undirected graph
+    }
+
+    void parallelBFS(int start) {
+        vector<bool> visited(V, false);
+        queue<int> q;
+
+        visited[start] = true;
+        q.push(start);
+
+        cout << "\nParallel BFS starting from node " << start << ":\n";
+
+        double startTime = omp_get_wtime();
+
+        while (!q.empty()) {
+            int size = q.size();
+            vector<int> levelNodes;
+
+            #pragma omp parallel
+            {
+                vector<int> localNodes;
+
+                #pragma omp for
+                for (int i = 0; i < size; i++) {
+                    int node = -1;
+                    bool valid = false;
+
+                    #pragma omp critical
+                    {
+                        if (!q.empty()) {
+                            node = q.front();
+                            q.pop();
+                            valid = true;
+                        }
+                    }
+
+                    if (!valid) continue;
+
+                    localNodes.push_back(node);
+
+                    for (int neighbor : adj[node]) {
+                        #pragma omp critical
+                        {
+                            if (!visited[neighbor]) {
+                                visited[neighbor] = true;
+                                q.push(neighbor);
+                            }
+                        }
+                    }
+                }
+
+                #pragma omp critical
+                levelNodes.insert(levelNodes.end(), localNodes.begin(), localNodes.end());
+            }
+
+            for (int node : levelNodes)
+                cout << node << " ";
+        }
+
+        double endTime = omp_get_wtime();
+        cout << "\nTime taken by Parallel BFS: " << (endTime - startTime) << " seconds\n";
+    }
+
+    void sequentialBFS(int start) {
+        vector<bool> visited(V, false);
+        queue<int> q;
+
+        visited[start] = true;
+        q.push(start);
+
+        cout << "\nSequential BFS starting from node " << start << ":\n";
+
+        double startTime = omp_get_wtime();
+
+        while (!q.empty()) {
+            int node = q.front();
+            q.pop();
+            cout << node << " ";
+
+            for (int neighbor : adj[node]) {
+                if (!visited[neighbor]) {
+                    visited[neighbor] = true;
+                    q.push(neighbor);
+                }
+            }
+        }
+
+        double endTime = omp_get_wtime();
+        cout << "\nTime taken by Sequential BFS: " << (endTime - startTime) << " seconds\n";
+    }
+};
+
+int main() {
+    int V, E;
+    cout << "Enter number of vertices: ";
+    cin >> V;
+
+    Graph g(V);
+
+    cout << "Enter number of edges: ";
+    cin >> E;
+
+    cout << "Enter each edge as two space-separated vertices (u v):\n";
+    for (int i = 0; i < E; i++) {
+        int u, v;
+        cin >> u >> v;
+        g.addEdge(u, v);
+    }
+
+    int start;
+    cout << "Enter starting node for traversal: ";
+    cin >> start;
+
+    g.parallelBFS(start);
+    g.sequentialBFS(start);
+
+    return 0;
+}
